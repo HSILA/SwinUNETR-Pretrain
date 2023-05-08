@@ -35,15 +35,13 @@ from monai.transforms import (
 
 
 def get_loader(args):
-    json_path = "./jsons/dataset_TCIAcovid19_0.json"
-    datadir = "/dataset/dummy"
     num_workers = 4
 
     train_list = load_decathlon_datalist(
-        json_path, False, "training", base_dir=datadir
+        args.json_list, False, "training", base_dir=args.data_dir
     )
     val_list = load_decathlon_datalist(
-        json_path, False, "validation", base_dir=datadir
+        args.json_list, False, "validation", base_dir=args.data_dir
     )
 
     print(
