@@ -79,7 +79,6 @@ class SSLHead(nn.Module):
     def forward(self, x):
         out = self.swinViT(x.contiguous())
         x_out = out[4]
-        print(out.shape)
         _, c, h, w, d = x_out.shape # batch × dim × H/32 × W/32 × D/32
         x4_reshape = x_out.flatten(start_dim=2, end_dim=4) # batch × dim × (h*w*d) 
         x4_reshape = x4_reshape.transpose(1, 2) # batch × (h*w*d) × dim
