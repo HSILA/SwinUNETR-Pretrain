@@ -191,6 +191,9 @@ def main():
     parser.add_argument("--cache_dataset", action="store_true", help="use monai cache Dataset")
     parser.add_argument("--data_dir", default="./dataset/dataset0/", type=str, help="dataset directory")
     parser.add_argument("--json_list", default="./jsons/dataset0.json", type=str, help="dataset json file")
+    parser.add_argument("--resume_ssl", action="store_true", help="resume training from pretrained self-supervised checkpoint")
+    parser.add_argument(
+    "--pretrained_path", default="./pretrained_models/model_swinvit.pt", type=str, help="path to pretrained checkpoint")
 
     args = parser.parse_args()
     logdir = "./runs/" + args.logdir
@@ -225,6 +228,27 @@ def main():
         writer = None
 
     model = SSLHead(args)
+    if args.resume_ssl:
+        try:
+            model_dict = torch.load(args.pretrained_path)
+            state_dict = model_dict["state_dict"]
+            # fix potential differences in state dict keys from pre-training to
+            # fine-tuning
+            if "module." in list(state_dict.keys())[0]:
+                print("Tag 'module.' found in state dict - fixing!")
+                for key in list(state_dict.keys()):
+                    state_dict[key.replace("module.", "")] = state_dict.pop(key)
+            if "swin_vit" in list(state_dict.keys())[0]:
+                print("Tag 'swin_vit' found in state dict - fixing!")
+                for key in list(state_dict.keys()):
+                    state_dict[key.replace("swin_vit", "swinViT")] = state_dict.pop(key)
+            # We now load model weights, setting param `strict` to False, i.e.:
+            # this load the encoder weights (Swin-ViT, SSL pre-trained), but leaves
+            # the decoder weights untouched (CNN UNet decoder).
+            model.load_state_dict(state_dict, strict=False)
+            print("Using pretrained self-supervised Swin UNETR backbone weights !")
+        except ValueError:
+            raise ValueError("Self-supervised pre-trained weights not available for" + str(args.model_name))
     model.cuda()
 
     if args.opt == "adam":
