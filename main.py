@@ -40,7 +40,6 @@ def main():
         for step, batch in enumerate(train_loader):
             t1 = time()
             x = batch["image"].cuda()
-            print(x.shape)
             x1, rot1 = rot_rand(args, x)
             x2, rot2 = rot_rand(args, x)
             x1_augment = aug_rand(args, x1)

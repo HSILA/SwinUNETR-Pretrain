@@ -20,6 +20,7 @@ from monai.data import (
 from monai.transforms import (
     AddChanneld,
     AsChannelFirstd,
+    EnsureChannelFirstd,
     Compose,
     CropForegroundd,
     LoadImaged,
@@ -50,72 +51,51 @@ def get_loader(args):
     print(
         "total number of validation data: {}".format(len(val_list))
     )
+    transforms_list = [
+        LoadImaged(keys=["image"]),
+        Orientationd(keys=["image"], axcodes="RAS"),
+        ScaleIntensityRanged(
+            keys=["image"],
+            a_min=args.a_min,
+            a_max=args.a_max,
+            b_min=args.b_min,
+            b_max=args.b_max,
+            clip=True,
+        ),
+        SpatialPadd(
+            keys="image",
+            spatial_size=[args.roi_x, args.roi_y, args.roi_z],
+        ),
+        CropForegroundd(
+            keys=["image"],
+            source_key="image",
+            k_divisible=[args.roi_x, args.roi_y, args.roi_z],
+        ),
+        RandSpatialCropSamplesd(
+            keys=["image"],
+            roi_size=[args.roi_x, args.roi_y, args.roi_z],
+            num_samples=args.sw_batch_size,
+            random_center=True,
+            random_size=False,
+        ),
+        ToTensord(keys=["image"]),
+    ]
 
-    train_transforms = Compose(
-        [
-            LoadImaged(keys=["image"]),
-            AddChanneld(keys=["image"]),
-            Orientationd(keys=["image"], axcodes="RAS"),
-            ScaleIntensityRanged(
-                keys=["image"],
-                a_min=args.a_min,
-                a_max=args.a_max,
-                b_min=args.b_min,
-                b_max=args.b_max,
-                clip=True,
-            ),
-            SpatialPadd(
-                keys="image",
-                spatial_size=[args.roi_x, args.roi_y, args.roi_z],
-            ),
-            CropForegroundd(
-                keys=["image"],
-                source_key="image",
-                k_divisible=[args.roi_x, args.roi_y, args.roi_z],
-            ),
-            RandSpatialCropSamplesd(
-                keys=["image"],
-                roi_size=[args.roi_x, args.roi_y, args.roi_z],
-                num_samples=args.sw_batch_size,
-                random_center=True,
-                random_size=False,
-            ),
-            ToTensord(keys=["image"]),
-        ]
-    )
-    val_transforms = Compose(
-        [
-            LoadImaged(keys=["image"]),
-            AddChanneld(keys=["image"]),
-            Orientationd(keys=["image"], axcodes="RAS"),
-            ScaleIntensityRanged(
-                keys=["image"],
-                a_min=args.a_min,
-                a_max=args.a_max,
-                b_min=args.b_min,
-                b_max=args.b_max,
-                clip=True,
-            ),
-            SpatialPadd(
-                keys="image",
-                spatial_size=[args.roi_x, args.roi_y, args.roi_z],
-            ),
-            CropForegroundd(
-                keys=["image"],
-                source_key="image",
-                k_divisible=[args.roi_x, args.roi_y, args.roi_z],
-            ),
-            RandSpatialCropSamplesd(
-                keys=["image"],
-                roi_size=[args.roi_x, args.roi_y, args.roi_z],
-                num_samples=args.sw_batch_size,
-                random_center=False,
-                random_size=False,
-            ),
-            ToTensord(keys=["image"]),
-        ]
-    )
+    if args.in_channels == 1:
+        transforms_list = (
+            transforms_list[:1]
+            + [EnsureChannelFirstd(keys=["image"])]
+            + transforms_list[1:]
+        )
+    else:
+        transforms_list = (
+            transforms_list[:1]
+            + [EnsureChannelFirstd(keys=["image"], channel_dim=-1)]
+            + transforms_list[1:]
+        )
 
+    train_transforms = Compose(transforms_list)
+    val_transforms = Compose(transforms_list)
     if args.cache_dataset:
         print("Using MONAI Cache Dataset")
         train_ds = CacheDataset(
@@ -151,6 +131,8 @@ def get_loader(args):
         sampler=train_sampler,
         drop_last=False,
     )
+    sample = next(iter(train_loader))
+    print(sample["image"].shape)
 
     val_ds = Dataset(data=val_list, transform=val_transforms)
     val_loader = DataLoader(
