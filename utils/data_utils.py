@@ -132,7 +132,6 @@ def get_loader(args):
         drop_last=False,
     )
     sample = next(iter(train_loader))
-    print(sample["image"].shape)
 
     val_ds = Dataset(data=val_list, transform=val_transforms)
     val_loader = DataLoader(
