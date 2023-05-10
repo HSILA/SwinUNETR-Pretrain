@@ -22,7 +22,7 @@ from models.ssl_head import SSLHead
 from optimizers.lr_scheduler import WarmupCosineSchedule
 from torch.cuda.amp import GradScaler, autocast
 from torch.nn.parallel import DistributedDataParallel
-# from torch.utils.tensorboard import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
 from utils.data_utils import get_loader
 from utils.ops import aug_rand, rot_rand
 
@@ -225,7 +225,7 @@ def main():
 
     if args.rank == 0:
         os.makedirs(logdir, exist_ok=True)
-        # writer = SummaryWriter(logdir)
+        writer = SummaryWriter(logdir)
     else:
         writer = None
 
