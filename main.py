@@ -203,6 +203,8 @@ def main():
     args.distributed = False
     if "WORLD_SIZE" in os.environ:
         args.distributed = int(os.environ["WORLD_SIZE"]) > 1
+    if args.distributed:
+        args.local_rank = int(os.environ['LOCAL_RANK'])
     args.device = "cuda:0"
     args.world_size = 1
     args.rank = 0
