@@ -46,7 +46,7 @@ for image in train_names:
     training.append({"image": f"./{image}"})
 validation = []
 for image in val_names:
-    training.append({"image": f"./{image}"})
+    validation.append({"image": f"./{image}"})
 to_json = {"training": training, "validation": validation}
 
 with open(args.json, 'w') as f:
