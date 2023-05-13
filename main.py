@@ -153,7 +153,7 @@ def main():
         return np.mean(loss_val), np.mean(loss_val_recon), img_list
 
     parser = argparse.ArgumentParser(description="PyTorch Training")
-    parser.add_argument("--logdir", default="test", type=str, help="directory to save the tensorboard logs")
+    parser.add_argument("--exp", default="test", type=str, help="directory to save the logs")
     parser.add_argument("--epochs", default=100, type=int, help="number of training epochs")
     parser.add_argument("--num_steps", default=100000, type=int, help="number of training iterations")
     parser.add_argument("--eval_num", default=100, type=int, help="evaluation frequency")
@@ -197,7 +197,7 @@ def main():
     "--pretrained_path", default="./pretrained_models/model_swinvit.pt", type=str, help="path to pretrained checkpoint")
 
     args = parser.parse_args()
-    logdir = "./runs/" + args.logdir
+    logdir = "./runs/" + args.exp
     os.makedirs(logdir, exist_ok=True)
     logger = logging.getLogger('logger')
     logger.setLevel(logging.INFO)
@@ -305,11 +305,11 @@ def main():
 
     if args.distributed:
         if dist.get_rank() == 0:
-            torch.save(model.state_dict(), logdir + "final_model.pth")
+            torch.save(model.state_dict(), os.path.join(logdir, f"{args.exp}_final_model.pth"))
         dist.destroy_process_group()
     else:
-        torch.save(model.state_dict(), logdir + "final_model.pth")
-    save_ckp(checkpoint, logdir + "/model_final_epoch.pt")
+        torch.save(model.state_dict(), os.path.join(logdir, f"{args.exp}_final_model.pth"))
+    save_ckp(checkpoint, os.path.join(logdir, f"{args.exp}_final_epoch.pth"))
 
 
 if __name__ == "__main__":
