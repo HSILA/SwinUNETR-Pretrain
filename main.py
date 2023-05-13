@@ -12,6 +12,7 @@
 import argparse
 import os
 from time import time
+import logging
 
 import numpy as np
 import torch
@@ -71,9 +72,9 @@ def main():
             optimizer.zero_grad()
             if args.distributed:
                 if dist.get_rank() == 0:
-                    print("Step:{}/{}, Loss:{:.4f}, Time:{:.4f}".format(global_step, args.num_steps, loss.item(), time() - t1))
+                    logger.info("Step:{}/{}, Loss:{:.4f}, Time:{:.4f}".format(global_step, args.num_steps, loss.item(), time() - t1))
             else:
-                print("Step:{}/{}, Loss:{:.4f}, Time:{:.4f}".format(global_step, args.num_steps, loss.item(), time() - t1))
+                logger.info("Step:{}/{}, Loss:{:.4f}, Time:{:.4f}".format(global_step, args.num_steps, loss.item(), time() - t1))
 
             global_step += 1
             if args.distributed:
@@ -99,13 +100,13 @@ def main():
                         "optimizer": optimizer.state_dict(),
                     }
                     save_ckp(checkpoint, logdir + "/model_bestValRMSE.pt")
-                    print(
+                    logger.info(
                         "Model was saved ! Best Recon. Val Loss: {:.4f}, Recon. Val Loss: {:.4f}".format(
                             val_best, val_loss_recon
                         )
                     )
                 else:
-                    print(
+                    logger.info(
                         "Model was not saved ! Best Recon. Val Loss: {:.4f} Recon. Val Loss: {:.4f}".format(
                             val_best, val_loss_recon
                         )
@@ -147,7 +148,7 @@ def main():
                 recon = rec_x1[0][0][:, :, 48] * 255.0
                 recon = recon.astype(np.uint8)
                 img_list = [xgt, x_aug, recon]
-                print("Validation step:{}, Loss:{:.4f}, Loss Reconstruction:{:.4f}".format(step, loss.item(), loss_recon.item()))
+                logger.info("Validation step:{}, Loss:{:.4f}, Loss Reconstruction:{:.4f}".format(step, loss.item(), loss_recon.item()))
 
         return np.mean(loss_val), np.mean(loss_val_recon), img_list
 
@@ -197,6 +198,13 @@ def main():
 
     args = parser.parse_args()
     logdir = "./runs/" + args.logdir
+    os.makedirs(logdir, exist_ok=True)
+    logger = logging.getLogger('logger')
+    logger.setLevel(logging.INFO)
+    file_handler = logging.FileHandler(os.path.join(logdir, 'logFile.log'))
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
     args.amp = not args.noamp
     torch.backends.cudnn.benchmark = True
     torch.autograd.set_detect_anomaly(True)
@@ -215,16 +223,15 @@ def main():
         torch.distributed.init_process_group(backend="nccl", init_method=args.dist_url)
         args.world_size = torch.distributed.get_world_size()
         args.rank = torch.distributed.get_rank()
-        print(
+        logger.info(
             "Training in distributed mode with multiple processes, 1 GPU per process. Process %d, total %d."
             % (args.rank, args.world_size)
         )
     else:
-        print("Training with a single process on 1 GPUs.")
+        logger.info("Training with a single process on 1 GPUs.")
     assert args.rank >= 0
 
     if args.rank == 0:
-        os.makedirs(logdir, exist_ok=True)
         writer = SummaryWriter(logdir)
     else:
         writer = None
@@ -237,18 +244,18 @@ def main():
             # fix potential differences in state dict keys from pre-training to
             # fine-tuning
             if "module." in list(state_dict.keys())[0]:
-                print("Tag 'module.' found in state dict - fixing!")
+                logger.info("Tag 'module.' found in state dict - fixing!")
                 for key in list(state_dict.keys()):
                     state_dict[key.replace("module.", "")] = state_dict.pop(key)
             if "swin_vit" in list(state_dict.keys())[0]:
-                print("Tag 'swin_vit' found in state dict - fixing!")
+                logger.info("Tag 'swin_vit' found in state dict - fixing!")
                 for key in list(state_dict.keys()):
                     state_dict[key.replace("swin_vit", "swinViT")] = state_dict.pop(key)
             # We now load model weights, setting param `strict` to False, i.e.:
             # this load the encoder weights (Swin-ViT, SSL pre-trained), but leaves
             # the decoder weights untouched (CNN UNet decoder).
             model.load_state_dict(state_dict, strict=False)
-            print("Using pretrained self-supervised Swin UNETR backbone weights !")
+            logger.info("Using pretrained self-supervised Swin UNETR backbone weights !")
         except ValueError:
             raise ValueError("Self-supervised pre-trained weights not available for" + str(args.model_name))
     model.cuda()
