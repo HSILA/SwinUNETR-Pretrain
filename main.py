@@ -101,15 +101,11 @@ def main():
                     }
                     save_ckp(checkpoint, logdir + "/model_bestValRMSE.pt")
                     logger.info(
-                        "Model was saved ! Best Recon. Val Loss: {:.4f}, Recon. Val Loss: {:.4f}".format(
-                            val_best, val_loss_recon
-                        )
+                        f"Model was saved! Best Recon. Val Loss: {val_best:.4f} | Current Recon. Val Loss: {val_loss_recon:.4f} | Current Val Loss: {val_loss:.4f}"
                     )
                 else:
                     logger.info(
-                        "Model was not saved ! Best Recon. Val Loss: {:.4f} Recon. Val Loss: {:.4f}".format(
-                            val_best, val_loss_recon
-                        )
+                        f"Model was not saved! Best Recon. Val Loss: {val_best:.4f} | Current Recon. Val Loss: {val_loss_recon:.4f} | Current Val Loss: {val_loss:.4f}"
                     )
         return global_step, loss, val_best
 
