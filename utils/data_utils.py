@@ -109,7 +109,7 @@ def get_loader(args):
         batch_size=args.batch_size,
         num_workers=num_workers,
         sampler=train_sampler,
-        drop_last=False,
+        drop_last=True,
     )
     sample = next(iter(train_loader))
 
@@ -119,7 +119,7 @@ def get_loader(args):
         batch_size=args.batch_size,
         num_workers=num_workers,
         shuffle=False,
-        drop_last=False,
+        drop_last=True,
     )
 
     return train_loader, val_loader
