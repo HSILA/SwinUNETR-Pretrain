@@ -53,15 +53,8 @@ def get_loader(args):
     )
     transforms_list = [
         LoadImaged(keys=["image"]),
+        EnsureChannelFirstd(keys=["image"]),
         Orientationd(keys=["image"], axcodes="RAS"),
-        ScaleIntensityRanged(
-            keys=["image"],
-            a_min=args.a_min,
-            a_max=args.a_max,
-            b_min=args.b_min,
-            b_max=args.b_max,
-            clip=True,
-        ),
         SpatialPadd(
             keys="image",
             spatial_size=[args.roi_x, args.roi_y, args.roi_z],
@@ -80,19 +73,6 @@ def get_loader(args):
         ),
         ToTensord(keys=["image"]),
     ]
-
-    if args.in_channels == 1:
-        transforms_list = (
-            transforms_list[:1]
-            + [EnsureChannelFirstd(keys=["image"])]
-            + transforms_list[1:]
-        )
-    else:
-        transforms_list = (
-            transforms_list[:1]
-            + [EnsureChannelFirstd(keys=["image"], channel_dim=-1)]
-            + transforms_list[1:]
-        )
 
     train_transforms = Compose(transforms_list)
     val_transforms = Compose(transforms_list)
