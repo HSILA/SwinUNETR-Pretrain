@@ -15,10 +15,8 @@ in the following:
 ## Data
 Our dataset comprises full-body CT/PET 3D images from patients diagnosed with prostate cancer, utilized to train a semantic segmentation model aimed at enhancing the detection and treatment planning of the disease. The dataset includes 3D PET images, consisting of 2D slices measuring $168 \times 168$ pixels, with a voxel size of $4.07 \times 4.07 \times 3$ millimeters. For CT images, each slice dimensions are $512 \times 512$ pixels, with a voxel size of $0.97 \times 0.97 \times 3$ millimeters. The total number of slices per 3D image varies depending on the patient's height and the imaging modality, encompassing an area from the skull to the mid-thighs. Below is an illustration featuring two slices from a representative CT/PET 3D image:
 
-<figure>
-  <img src="./assets/pet-ct.jpg" alt="image">
-  <figcaption style="text-align: center;">An example slice of CT (left) and PET (right) images.</figcaption>
-</figure>
+![image](./assets/pet-ct.jpg)
+*An example slice of CT (left) and PET (right) images.*
 
 Both image modalities are captured using the same device; however, patient movements between the two imaging steps can prevent the slices from being perfectly aligned. To process the images from both modalities together as a 4D tensor, it is crucial that they have an equal number of slices that are exactly aligned with each other. This alignment is not naturally present due to potential patient movements. Therefore, image registration techniques are employed to ensure precise alignment, enabling the combined use of both modalities in the model. CT images undergo downsampling to match the dimensions of PET images. Subsequently, pixel values of each modality are clipped and normalized to fall within the range of 0 to 1.
 
