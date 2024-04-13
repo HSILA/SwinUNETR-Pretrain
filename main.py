@@ -13,6 +13,7 @@ import argparse
 import os
 from time import time
 import logging
+import wandb
 
 import numpy as np
 import torch
@@ -70,6 +71,13 @@ def main():
             if args.lrdecay:
                 scheduler.step()
             optimizer.zero_grad()
+            wandb.log({"train_total_loss": loss.item(),
+                       "train_rot_loss": losses_tasks[0].item(),
+                       "train_contrast_loss": losses_tasks[1].item(),
+                       "train_recons_loss": losses_tasks[2].item(),
+                       "train_mci_loss": losses_tasks[3].item(),
+                       "time": time() - t1
+                       })
             if args.distributed:
                 if dist.get_rank() == 0:
                     logger.info("Step:{}/{}, Loss:{:.4f}, Time:{:.4f}".format(global_step, args.num_steps, loss.item(), time() - t1))
@@ -83,6 +91,15 @@ def main():
                 val_cond = global_step % args.eval_num == 0
 
             if val_cond:
+                val_loss, losses_tasks, img_list = validation(args, test_loader)
+                val_loss_recon = losses_tasks[2]
+                wandb.log({
+                    "val_total_loss": val_loss,
+                    "val_rot_loss": losses_tasks[0],
+                    "val_contrast_loss": losses_tasks[1],
+                    "val_recons_loss": losses_tasks[2],
+                    "train_mci_loss": losses_tasks[3],
+                })
                 val_loss, val_loss_recon, img_list = validation(args, test_loader)
                 writer.add_scalar("Validation/loss_recon", scalar_value=val_loss_recon, global_step=global_step)
                 writer.add_scalar("train/loss_total", scalar_value=np.mean(loss_train), global_step=global_step)
@@ -99,7 +116,8 @@ def main():
                         "state_dict": model.state_dict(),
                         "optimizer": optimizer.state_dict(),
                     }
-                    save_ckp(checkpoint, logdir + "/model_bestValRMSE.pt")
+                    save_ckp(checkpoint, logdir + f"/model_best_{args.exp}.pt")
+                    wandb.save(logdir + f"/model_best_{args.exp}.pt")
                     logger.info(
                         f"Model was saved! Best Recon. Val Loss: {val_best:.4f} | Current Recon. Val Loss: {val_loss_recon:.4f} | Current Val Loss: {val_loss:.4f}"
                     )
@@ -112,7 +130,10 @@ def main():
     def validation(args, test_loader):
         model.eval()
         loss_val = []
+        loss_val_rot = []
+        loss_val_contrast = []
         loss_val_recon = []
+        loss_val_mci = []
         with torch.no_grad():
             for step, batch in enumerate(test_loader):
                 val_inputs = batch["image"].cuda()
@@ -128,9 +149,15 @@ def main():
                     imgs_recon = torch.cat([rec_x1, rec_x2], dim=0)
                     imgs = torch.cat([x1, x2], dim=0)
                     loss, losses_tasks = loss_function(rot_p, rots, contrastive1_p, contrastive2_p, imgs_recon, imgs)
+                loss_rot = losses_tasks[0]
+                loss_contrast = losses_tasks[1]
                 loss_recon = losses_tasks[2]
+                loss_mci = losses_tasks[3]
                 loss_val.append(loss.item())
+                loss_val_rot.append(loss_rot.item())
+                loss_val_contrast.append(loss_contrast.item())
                 loss_val_recon.append(loss_recon.item())
+                loss_val_mci.append(loss_mci.item())
                 x_gt = x1.detach().cpu().numpy()
                 x_gt = (x_gt - np.min(x_gt)) / (np.max(x_gt) - np.min(x_gt))
                 xgt = x_gt[0][0][:, :, 48] * 255.0
@@ -146,7 +173,7 @@ def main():
                 img_list = [xgt, x_aug, recon]
                 logger.info("Validation step:{}, Loss:{:.4f}, Loss Reconstruction:{:.4f}".format(step, loss.item(), loss_recon.item()))
 
-        return np.mean(loss_val), np.mean(loss_val_recon), img_list
+        return np.mean(loss_val), (np.mean(loss_val_rot), np.mean(loss_val_contrast), np.mean(loss_val_recon), np.mean(loss_val_mci)), img_list
 
     parser = argparse.ArgumentParser(description="PyTorch Training")
     parser.add_argument("--exp", default="test", type=str, help="directory to save the logs")
@@ -195,6 +222,7 @@ def main():
     args = parser.parse_args()
     logdir = "./runs/" + args.exp
     os.makedirs(logdir, exist_ok=True)
+    wandb.init(project="SwinUNETR-Pretrain", name=args.exp, config=args)
     logger = logging.getLogger('logger')
     logger.setLevel(logging.INFO)
     file_handler = logging.FileHandler(os.path.join(logdir, 'logFile.log'))
@@ -233,6 +261,7 @@ def main():
         writer = None
 
     model = SSLHead(args)
+    wandb.watch(model, log='all', log_freq=100)
     if args.resume_ssl:
         try:
             model_dict = torch.load(args.pretrained_path)
