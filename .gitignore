@@ -165,3 +165,4 @@ runs
 pretrained_models
 MONAI
 wandb
+*.sh

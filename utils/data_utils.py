@@ -55,6 +55,9 @@ def get_loader(args):
         LoadImaged(keys=["image"]),
         EnsureChannelFirstd(keys=["image"]),
         Orientationd(keys=["image"], axcodes="RAS"),
+        ScaleIntensityRanged(
+            keys=["image"], a_min=args.a_min, a_max=args.a_max, b_min=args.b_min, b_max=args.b_max, clip=True
+        ),
         SpatialPadd(
             keys="image",
             spatial_size=[args.roi_x, args.roi_y, args.roi_z],
