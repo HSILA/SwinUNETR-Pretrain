@@ -186,6 +186,7 @@ def main():
     parser.add_argument("--dropout_path_rate", default=0.0, type=float, help="drop path rate")
     parser.add_argument("--use_checkpoint", action="store_true", help="use gradient checkpointing to save memory")
     parser.add_argument("--spatial_dims", default=3, type=int, help="spatial dimension of input data")
+    parser.add_argument("--alpha4", default=0.0, type=float, help="mean curvature loss coefficient")
     parser.add_argument("--a_min", default=-1000, type=float, help="a_min in ScaleIntensityRanged")
     parser.add_argument("--a_max", default=1000, type=float, help="a_max in ScaleIntensityRanged")
     parser.add_argument("--b_min", default=0.0, type=float, help="b_min in ScaleIntensityRanged")
