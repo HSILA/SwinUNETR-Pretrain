@@ -4,3 +4,4 @@ einops==0.4.1
 tensorboardX==2.1
 wandb
 torchvision
+tensorboard

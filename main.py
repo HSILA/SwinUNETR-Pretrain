@@ -98,9 +98,8 @@ def main():
                     "val_rot_loss": losses_tasks[0],
                     "val_contrast_loss": losses_tasks[1],
                     "val_recons_loss": losses_tasks[2],
-                    "train_mci_loss": losses_tasks[3],
+                    "val_mci_loss": losses_tasks[3],
                 })
-                val_loss, val_loss_recon, img_list = validation(args, test_loader)
                 writer.add_scalar("Validation/loss_recon", scalar_value=val_loss_recon, global_step=global_step)
                 writer.add_scalar("train/loss_total", scalar_value=np.mean(loss_train), global_step=global_step)
                 writer.add_scalar("train/loss_recon", scalar_value=np.mean(loss_train_recon), global_step=global_step)
@@ -186,7 +185,7 @@ def main():
     parser.add_argument("--dropout_path_rate", default=0.0, type=float, help="drop path rate")
     parser.add_argument("--use_checkpoint", action="store_true", help="use gradient checkpointing to save memory")
     parser.add_argument("--spatial_dims", default=3, type=int, help="spatial dimension of input data")
-    parser.add_argument("--alpha4", default=0.0, type=float, help="mean curvature loss coefficient")
+    parser.add_argument("--alpha4", default=1.0, type=float, help="mean curvature loss coefficient")
     parser.add_argument("--a_min", default=-1000, type=float, help="a_min in ScaleIntensityRanged")
     parser.add_argument("--a_max", default=1000, type=float, help="a_max in ScaleIntensityRanged")
     parser.add_argument("--b_min", default=0.0, type=float, help="b_min in ScaleIntensityRanged")
@@ -194,11 +193,11 @@ def main():
     parser.add_argument("--space_x", default=1.5, type=float, help="spacing in x direction")
     parser.add_argument("--space_y", default=1.5, type=float, help="spacing in y direction")
     parser.add_argument("--space_z", default=2.0, type=float, help="spacing in z direction")
-    parser.add_argument("--roi_x", default=96, type=int, help="roi size in x direction")
-    parser.add_argument("--roi_y", default=96, type=int, help="roi size in y direction")
-    parser.add_argument("--roi_z", default=96, type=int, help="roi size in z direction")
+    parser.add_argument("--roi_x", default=64, type=int, help="roi size in x direction")
+    parser.add_argument("--roi_y", default=64, type=int, help="roi size in y direction")
+    parser.add_argument("--roi_z", default=64, type=int, help="roi size in z direction")
     parser.add_argument("--batch_size", default=2, type=int, help="number of batch size")
-    parser.add_argument("--sw_batch_size", default=2, type=int, help="number of sliding window batch size")
+    parser.add_argument("--sw_batch_size", default=1, type=int, help="number of sliding window batch size")
     parser.add_argument("--lr", default=4e-4, type=float, help="learning rate")
     parser.add_argument("--decay", default=0.1, type=float, help="decay rate")
     parser.add_argument("--momentum", default=0.9, type=float, help="momentum")
