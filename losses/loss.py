@@ -13,7 +13,7 @@ import torch
 from torch.nn import functional as F
 from torchvision.transforms.functional import gaussian_blur
 
-def compute_curvature_isophotes_batch(images, sigma):
+def compute_curvature_isophotes_batch(images, sigma=1):
     """
     Computes the mean curvature of isophotes for a batch of 3D channel images using PyTorch.
     
@@ -79,7 +79,7 @@ class Loss(torch.nn.Module):
     def __init__(self, batch_size, args):
         super().__init__()
         self.rot_loss = torch.nn.CrossEntropyLoss().cuda()
-        self.recon_loss = torch.nn.MSELoss().cuda()
+        self.recon_loss = torch.nn.L1Loss().cuda()
         self.contrast_loss = Contrast(args, batch_size).cuda()
         self.alpha1 = 1.0
         self.alpha2 = 1.0
